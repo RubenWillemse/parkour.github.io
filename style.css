@@ -1,1 +1,36 @@
+body{
+    margin:0;
+    font-family:Arial, sans-serif;
+    text-align:center;
+    background:#87CEEB;
+}
 
+h1,h2{
+    margin-top:50px;
+}
+
+button{
+    padding:10px 20px;
+    margin:10px;
+    font-size:16px;
+    cursor:pointer;
+    border:none;
+    background:#222;
+    color:white;
+    border-radius:8px;
+}
+
+button:hover{
+    background:#444;
+}
+
+.hidden{
+    display:none;
+}
+
+canvas{
+    background:white;
+    display:block;
+    margin:20px auto;
+    border:3px solid black;
+}

@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <title>Endless Runner</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div id="menu">
+    <h1>🏃 Endless Runner</h1>
+    <button onclick="startGame()">Start Game</button>
+    <button onclick="showTutorial()">Tutorial</button>
+    <button onclick="showShop()">Shop</button>
+</div>
+
+<div id="tutorial" class="hidden">
+    <h2>Tutorial</h2>
+    <p>⬆️ = Springen</p>
+    <p>⬆️⬆️ = Salto</p>
+    <p>⬇️ = Sliding</p>
+    <p>💰 Verzamel munten om skins te kopen!</p>
+    <button onclick="backToMenu()">Terug</button>
+</div>
+
+<div id="shop" class="hidden">
+    <h2>Shop</h2>
+    <p>Munten: <span id="coinDisplay">0</span></p>
+    <button onclick="buySkin('red', 20)">Rode Skin (20)</button>
+    <button onclick="buySkin('blue', 40)">Blauwe Skin (40)</button>
+    <button onclick="buySkin('green', 60)">Groene Skin (60)</button>
+    <button onclick="backToMenu()">Terug</button>
+</div>
+
+<canvas id="gameCanvas" width="900" height="400" class="hidden"></canvas>
+
+<script>
+let canvas = document.getElementById("gameCanvas");
+let ctx = canvas.getContext("2d");
+
+let player = {
+    x: 100,
+    y: 300,
+    width: 30,
+    height: 60,
+    velocityY: 0,
+    gravity: 0.8,
+    jumping: false,
+    doubleJump: false,
+    sliding: false,
+    color: "black"
+};
+
+let obstacles = [];
+let coins = [];
+let speed = 5;
+let score = 0;
+let coinCount = 0;
+let gameRunning = false;
+
+function startGame(){
+    document.getElementById("menu").classList.add("hidden");
+    canvas.classList.remove("hidden");
+    gameRunning = true;
+    gameLoop();
+}
+
+function backToMenu(){
+    document.getElementById("tutorial").classList.add("hidden");
+    document.getElementById("shop").classList.add("hidden");
+    document.getElementById("menu").classList.remove("hidden");
+}
+
+function showTutorial(){
+    document.getElementById("menu").classList.add("hidden");
+    document.getElementById("tutorial").classList.remove("hidden");
+}
+
+function showShop(){
+    document.getElementById("menu").classList.add("hidden");
+    document.getElementById("shop").classList.remove("hidden");
+    document.getElementById("coinDisplay").innerText = coinCount;
+}
+
+function buySkin(color, cost){
+    if(coinCount >= cost){
+        coinCount -= cost;
+        player.color = color;
+        alert("Skin gekocht!");
+    } else {
+        alert("Niet genoeg munten!");
+    }
+}
+
+document.addEventListener("keydown", function(e){
+    if(e.key === "ArrowUp"){
+        if(!player.jumping){
+            player.velocityY = -15;
+            player.jumping = true;
+        } else if(!player.doubleJump){
+            player.velocityY = -18;
+            player.doubleJump = true;
+        }
+    }
+
+    if(e.key === "ArrowDown"){
+        player.sliding = true;
+        player.height = 30;
+    }
+});
+
+document.addEventListener("keyup", function(e){
+    if(e.key === "ArrowDown"){
+        player.sliding = false;
+        player.height = 60;
+    }
+});
+
+function spawnObstacle(){
+    obstacles.push({x: canvas.width, y: 320, width: 30, height: 40});
+}
+
+function spawnCoin(){
+    coins.push({x: canvas.width, y: 250, size: 15});
+}
+
+function update(){
+    player.velocityY += player.gravity;
+    player.y += player.velocityY;
+
+    if(player.y >= 300){
+        player.y = 300;
+        player.jumping = false;
+        player.doubleJump = false;
+    }
+
+    obstacles.forEach(o => o.x -= speed);
+    coins.forEach(c => c.x -= speed);
+
+    obstacles.forEach(o => {
+        if(player.x < o.x + o.width &&
+           player.x + player.width > o.x &&
+           player.y < o.y + o.height &&
+           player.y + player.height > o.y){
+               gameOver();
+        }
+    });
+
+    coins.forEach((c, index) => {
+        if(player.x < c.x + c.size &&
+           player.x + player.width > c.x &&
+           player.y < c.y + c.size &&
+           player.y + player.height > c.y){
+               coinCount++;
+               coins.splice(index,1);
+        }
+    });
+
+    if(Math.random() < 0.02) spawnObstacle();
+    if(Math.random() < 0.01) spawnCoin();
+
+    score++;
+    if(score % 500 === 0){
+        speed += 0.5;
+    }
+}
+
+function drawPlayer(){
+    ctx.fillStyle = player.color;
+
+    // Body
+    ctx.fillRect(player.x, player.y, player.width, player.height);
+
+    // Head
+    ctx.beginPath();
+    ctx.arc(player.x + 15, player.y - 15, 15, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Arms
+    ctx.fillRect(player.x - 10, player.y + 10, 10, 5);
+    ctx.fillRect(player.x + 30, player.y + 10, 10, 5);
+
+    // Legs
+    ctx.fillRect(player.x + 5, player.y + player.height, 5, 15);
+    ctx.fillRect(player.x + 20, player.y + player.height, 5, 15);
+}
+
+function draw(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+
+    ctx.fillStyle = "lightgreen";
+    ctx.fillRect(0,360,canvas.width,40);
+
+    drawPlayer();
+
+    ctx.fillStyle = "brown";
+    obstacles.forEach(o => ctx.fillRect(o.x,o.y,o.width,o.height));
+
+    ctx.fillStyle = "gold";
+    coins.forEach(c => ctx.fillRect(c.x,c.y,c.size,c.size));
+
+    ctx.fillStyle = "black";
+    ctx.fillText("Score: "+score,20,20);
+    ctx.fillText("Munten: "+coinCount,20,40);
+}
+
+function gameLoop(){
+    if(!gameRunning) return;
+    update();
+    draw();
+    requestAnimationFrame(gameLoop);
+}
+
+function gameOver(){
+    alert("Game Over! Score: " + score);
+    document.location.reload();
+}
+</script>
+
+</body>
+</html>
